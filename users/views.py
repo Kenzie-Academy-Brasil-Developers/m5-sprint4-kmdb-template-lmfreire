@@ -1,6 +1,12 @@
 from rest_framework.views import APIView, Request, Response, status
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
+from django.shortcuts import get_object_or_404
+
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from .permissions import IsAdminOrOwner
+from rest_framework.pagination import PageNumberPagination
 
 from .models import User
 
@@ -31,3 +37,27 @@ class UserLoginView(APIView):
             {"detail": "invalid username or password"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+class UserView(APIView, PageNumberPagination):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request: Request) -> Response:
+        users = User.objects.all()
+        result_page = self.paginate_queryset(users, request, view=self)
+        serializer = UserSerializer(result_page, many=True)
+        
+        return self.get_paginated_response(serializer.data)
+
+class UserDetailView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
+    
+    def get(self, request: Request, user_id: int) -> Response:
+        user = get_object_or_404(User, id=user_id)
+        
+        self.check_object_permissions(request, user)
+        
+        serializer = UserSerializer(user)
+
+        return Response(serializer.data)

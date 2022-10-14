@@ -15,15 +15,14 @@ class UserSerializer(serializers.Serializer):
     bio = serializers.CharField(allow_null=True, allow_blank=True, default=None)
     is_critic = serializers.BooleanField(default=False)
     updated_at = serializers.DateTimeField(read_only=True)
-    is_superuser = serializers.DateTimeField(read_only=True)
+    is_superuser = serializers.BooleanField(read_only=True)
     
     
     def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
-        user = User.objects.create(**validated_data)
+        user = User.objects.create_user(**validated_data)
         
-        return user
-
+        return user  
+    
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True)
